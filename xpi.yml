@@ -31,7 +31,7 @@ test:
   xpis:
     download:
     - https://github.com/retorquere/zotero-debug-bridge/releases/download/update.rdf/update.rdf
-    - https://www.zotero.org/download/update.rdf
+    - https://www.zotero.org/download/dev/zotero-5.0-beta.xpi
     install: test/fixtures/plugins
 xpi: zotero-better-bibtex.xpi
 changelog: https://retorquere.github.io/zotero-better-bibtex/CHANGELOG.html
