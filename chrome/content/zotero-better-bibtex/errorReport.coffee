@@ -101,7 +101,7 @@ Zotero_BetterBibTeX_ErrorReport = new class
     continueButton.disabled = true
 
     if !document.getElementById("zotero-error-include-context").checked
-      @errorlog.info = "Zotero: #{ZOTERO_CONFIG.VERSION}, Better BibTeX: #{Zotero.BetterBibTeX.release}"
+      @errorlog.info = "Zotero: #{Zotero.BetterBibTeX.zoteroRelease}, Better BibTeX: #{Zotero.BetterBibTeX.release}"
 
     if !document.getElementById("zotero-error-include-errors").checked
       @errorlog.errors = null

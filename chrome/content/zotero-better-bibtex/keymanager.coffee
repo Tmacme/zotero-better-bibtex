@@ -44,9 +44,9 @@ Zotero.BetterBibTeX.keymanager = new class
   prime: ->
     sql = "select i.itemID as itemID from items i where itemTypeID not in (1, 14) and not i.itemID in (select itemID from deletedItems)"
     assigned = (key.itemID for key in @db.keys.find())
-    sql += " and not i.itemID in #{Zotero.BetterBibTeX.DB.SQLite.Set(assigned)}" if assigned.length > 0
+    sql += " and not i.itemID in #{Zotero.BetterBibTeX.SQLite::Set(assigned)}" if assigned.length > 0
 
-    items = Zotero.DB.columnQuery(sql)
+    items = Zotero.BetterBibTeX.SQLite::columnQuery(sql)
     if items.length > 100
       return unless Services.prompt.confirm(null, 'Filling citation key cache', """
           You have requested a scan over all citation keys, but have #{items.length} references for which the citation key must still be calculated.
@@ -100,7 +100,7 @@ Zotero.BetterBibTeX.keymanager = new class
     citekey = "zotero-#{if item.libraryID in [undefined, null] then 'null' else item.libraryID}-#{item.itemID}" if citekey in [undefined, null, '']
     return null unless citekey
 
-    libraryID = @integer(if item.libraryID == undefined then Zotero.DB.valueQuery('select libraryID from items where itemID = ?', [item.itemID]) else item.libraryID)
+    libraryID = @integer(if item.libraryID == undefined then Zotero.BetterBibTeX.SQLite::valueQuery('select libraryID from items where itemID = ?', [item.itemID]) else item.libraryID)
     itemID = @integer(item.itemID)
     in_use = (key.citekey for key in @db.keys.where((o) -> o.libraryID == libraryID && o.itemID != itemID && o.citekey.indexOf(citekey) == 0))
     postfix = { n: 0, c: '' }
@@ -191,7 +191,7 @@ Zotero.BetterBibTeX.keymanager = new class
     return @verify(key)
 
   scan: (items) ->
-    items ||= (item.itemID for item in Zotero.DB.query(@findKeysSQL))
+    items ||= (item.itemID for item in Zotero.BetterBibTeX.SQLite::query(@findKeysSQL))
     return [] if items.length == 0
     if typeof items[0] in ['number', 'string']
       items = Zotero.Items.get(items)

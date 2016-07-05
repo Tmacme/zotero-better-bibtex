@@ -5,6 +5,7 @@ Components.utils.import("resource://services-common/async.js")
 Components.utils.import('resource://zotero/config.js') unless ZOTERO_CONFIG?
 
 Zotero.BetterBibTeX = {
+  zoteroRelease: ZOTERO_CONFIG.VERSION || Zotero.version
   serializer: Components.classes['@mozilla.org/xmlextras/xmlserializer;1'].createInstance(Components.interfaces.nsIDOMSerializer)
   document: Components.classes['@mozilla.org/xul/xul-document;1'].getService(Components.interfaces.nsIDOMDocument)
 }
@@ -425,13 +426,13 @@ Zotero.BetterBibTeX.extensionConflicts = ->
     ''')
   )
 
-  if ZOTERO_CONFIG.VERSION?.match(/\.SOURCE$/)
+  if Zotero.BetterBibTeX.zoteroRelease?.match(/\.SOURCE$/)
     @flash(
-      "You are on a custom Zotero build (#{ZOTERO_CONFIG.VERSION}). " +
+      "You are on a custom Zotero build (#{Zotero.BetterBibTeX.zoteroRelease}). " +
       'Feel free to submit error reports for Better BibTeX when things go wrong, I will do my best to address them, but the target will always be the latest officially released version of Zotero'
     )
-  if Services.vc.compare(ZOTERO_CONFIG.VERSION?.replace(/\.SOURCE$/, '') || '0.0.0', '4.0.28') < 0
-    @disable("Better BibTeX has been disabled because it found Zotero #{ZOTERO_CONFIG.VERSION}, but requires 4.0.28 or later.")
+  if Services.vc.compare(Zotero.BetterBibTeX.zoteroRelease?.replace(/\.SOURCE$/, '') || '0.0.0', '4.0.28') < 0
+    @disable("Better BibTeX has been disabled because it found Zotero #{Zotero.BetterBibTeX.zoteroRelease}, but requires 4.0.28 or later.")
 
   @disableInConnector(Zotero.isConnector)
 
@@ -587,8 +588,6 @@ Zotero.BetterBibTeX.version = (version) ->
   return v
 
 Zotero.BetterBibTeX.migrateData = ->
-  return unless @DB.SQLite.migrate()
-
   for key in @pref.prefs.getChildList('')
     switch key
       when 'auto-abbrev.style' then @pref.set('autoAbbrevStyle', @pref.get(key))
@@ -634,7 +633,7 @@ Zotero.BetterBibTeX.init = ->
   @threadManager = Components.classes['@mozilla.org/thread-manager;1'].getService()
   @windowMediator = Components.classes['@mozilla.org/appshell/window-mediator;1'].getService(Components.interfaces.nsIWindowMediator)
 
-  @migrateData()
+  @migrateData() if Zotero.BetterBibTeX.DB.upgradeNeeded
 
   if @pref.get('scanCitekeys') || Zotero.BetterBibTeX.DB.upgradeNeeded
     reason = if @pref.get('scanCitekeys') then 'requested by user' else 'after upgrade'

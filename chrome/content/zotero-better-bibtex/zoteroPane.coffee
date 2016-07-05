@@ -37,7 +37,7 @@ if !ZoteroPane_Local.BetterBibTeX
   ### monkey-patch buildCollectionContextMenu to add group library export ###
   ZoteroPane_Local.buildCollectionContextMenu = ((original) ->
     return ->
-      zv = ZOTERO_CONFIG.VERSION.split('.')
+      zv = Zotero.BetterBibTeX.zoteroRelease.split('.')
       if parseInt(zv[0]) >= 4 && parseInt(zv[1]) == 0 && parseInt(zv[1]) <= 26
         itemGroup = @collectionsView._getItemAtRow(@collectionsView.selection.currentIndex)
 

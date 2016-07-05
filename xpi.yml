@@ -57,6 +57,7 @@ files:
 - chrome/content/zotero-better-bibtex/keymanager.js
 - chrome/content/zotero-better-bibtex/journalAbbrev.js
 - chrome/content/zotero-better-bibtex/lokijs.js
+- chrome/content/zotero-better-bibtex/async.js
 - chrome/content/zotero-better-bibtex/preferences.js
 - chrome/content/zotero-better-bibtex/preferences.xul
 - chrome/content/zotero-better-bibtex/punycode.js
