@@ -59,7 +59,7 @@ Zotero.BetterBibTeX.auto = new class
     collections = Zotero.Collections.getCollectionsContainingItems(ids, true) || []
     collections = @withParentCollections(collections) unless collections.length == 0
     collections = ("collection:#{id}" for id in collections)
-    for libraryID in Zotero.BetterBibTeX.SQLite::columnQuery("select distinct libraryID as libraryID from items where itemID in #{Zotero.BetterBibTeX.SQLite::Set(ids)}")
+    for libraryID in Zotero.BetterBibTeX.SQLite.columnQuery("select distinct libraryID as libraryID from items where itemID in #{Zotero.BetterBibTeX.SQLite.Set(ids)}")
       if libraryID
         collections.push("library:#{libraryID}")
       else
@@ -76,11 +76,11 @@ Zotero.BetterBibTeX.auto = new class
   withParentCollections: (collections) ->
     return collections if collections.length == 0
 
-    return Zotero.BetterBibTeX.SQLite::columnQuery("
+    return Zotero.BetterBibTeX.SQLite.columnQuery("
       with recursive recursivecollections as (
         select collectionID, parentCollectionID
         from collections
-        where collectionID in #{Zotero.BetterBibTeX.SQLite::Set(collections)}
+        where collectionID in #{Zotero.BetterBibTeX.SQLite.Set(collections)}
 
         union all
 

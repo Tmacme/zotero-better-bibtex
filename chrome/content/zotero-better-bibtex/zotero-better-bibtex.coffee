@@ -2,10 +2,12 @@ Components.utils.import('resource://gre/modules/Services.jsm')
 Components.utils.import('resource://gre/modules/AddonManager.jsm')
 Components.utils.import("resource://services-common/async.js")
 
-Components.utils.import('resource://zotero/config.js') unless ZOTERO_CONFIG?
+if ! Zotero.version
+  Components.utils.import('resource://zotero/config.js') unless ZOTERO_CONFIG?
+  Zotero.version = ZOTERO_CONFIG.VERSION
 
 Zotero.BetterBibTeX = {
-  zoteroRelease: ZOTERO_CONFIG.VERSION || Zotero.version
+  Five: Zotero.version[0] == '5'
   serializer: Components.classes['@mozilla.org/xmlextras/xmlserializer;1'].createInstance(Components.interfaces.nsIDOMSerializer)
   document: Components.classes['@mozilla.org/xul/xul-document;1'].getService(Components.interfaces.nsIDOMDocument)
 }
@@ -290,13 +292,13 @@ Zotero.BetterBibTeX.addCacheHistory = ->
       clear: Zotero.BetterBibTeX.cache.stats.clear
   })
 
-Zotero.BetterBibTeX.debugMode = ->
+Zotero.BetterBibTeX.debugMode = (silent) ->
   if @pref.get('debug')
     Zotero.Debug.setStore(true)
     Zotero.Prefs.set('debug.store', true)
     @debug = @debug_on
     @log = @log_on
-    @flash('Debug mode active', 'Debug mode is active. This will affect performance.')
+    @flash('Debug mode active', 'Debug mode is active. This will affect performance.') unless silent
 
     clearInterval(Zotero.BetterBibTeX.debugInterval) if Zotero.BetterBibTeX.debugInterval
     try
@@ -426,18 +428,17 @@ Zotero.BetterBibTeX.extensionConflicts = ->
     ''')
   )
 
-  if Zotero.BetterBibTeX.zoteroRelease?.match(/\.SOURCE$/)
+  if Zotero.version?.match(/\.SOURCE$/)
     @flash(
-      "You are on a custom Zotero build (#{Zotero.BetterBibTeX.zoteroRelease}). " +
+      "You are on a custom Zotero build (#{Zotero.version}). " +
       'Feel free to submit error reports for Better BibTeX when things go wrong, I will do my best to address them, but the target will always be the latest officially released version of Zotero'
     )
-  if Services.vc.compare(Zotero.BetterBibTeX.zoteroRelease?.replace(/\.SOURCE$/, '') || '0.0.0', '4.0.28') < 0
-    @disable("Better BibTeX has been disabled because it found Zotero #{Zotero.BetterBibTeX.zoteroRelease}, but requires 4.0.28 or later.")
+  if Services.vc.compare(Zotero.version?.replace(/\.SOURCE$/, '') || '0.0.0', '4.0.28') < 0
+    @disable("Better BibTeX has been disabled because it found Zotero #{Zotero.version}, but requires 4.0.28 or later.")
 
   @disableInConnector(Zotero.isConnector)
 
 Zotero.BetterBibTeX.disableInConnector = (isConnector) ->
-  return
   return unless isConnector
   @disable("""
     You are running Zotero in connector mode (running Zotero Firefox and Zotero Standalone simultaneously.
@@ -454,7 +455,7 @@ Zotero.BetterBibTeX.flash = (title, body) ->
   try
     Zotero.BetterBibTeX.debug('flash:', title)
     pw = new Zotero.ProgressWindow()
-    pw.changeHeadline(title)
+    pw.changeHeadline('Better BibTeX: ' + title)
     body ||= title
     body = body.join("\n") if Array.isArray(body)
     pw.addDescription(body)
@@ -587,32 +588,6 @@ Zotero.BetterBibTeX.version = (version) ->
   @debug("full version: #{version}, canonical version: #{v}")
   return v
 
-Zotero.BetterBibTeX.migrateData = ->
-  for key in @pref.prefs.getChildList('')
-    switch key
-      when 'auto-abbrev.style' then @pref.set('autoAbbrevStyle', @pref.get(key))
-      when 'auto-abbrev' then @pref.set('autoAbbrev', @pref.get(key))
-      when 'auto-export' then @pref.set('autoExport', @pref.get(key))
-      when 'citeKeyFormat' then @pref.set('citekeyFormat', @pref.get(key))
-      when 'doi-and-url' then @pref.set('DOIandURL', @pref.get(key))
-      when 'key-conflict-policy' then @pref.set('keyConflictPolicy', @pref.get(key))
-      when 'langid' then @pref.set('langID', @pref.get(key))
-      when 'pin-citekeys' then @pref.set('pinCitekeys', @pref.get(key))
-      when 'raw-imports' then @pref.set('rawImports', @pref.get(key))
-      when 'show-citekey' then @pref.set('showCitekeys', @pref.get(key))
-      when 'skipfields' then @pref.set('skipFields', @pref.get(key))
-      when 'unicode'
-        @pref.set('asciiBibTeX', (@pref.get(key) != 'always'))
-        @pref.set('asciiBibLaTeX', (@pref.get(key) == 'never'))
-      when 'bibtexURLs' then @pref.set('bibtexURL', (if @pref.get(key) then 'note' else 'off'))
-      else continue
-    @pref.prefs.clearUserPref(key)
-  @pref.prefs.clearUserPref('brace-all')
-  @pref.prefs.clearUserPref('usePrefix')
-  @pref.prefs.clearUserPref('useprefix')
-  @pref.prefs.clearUserPref('verbatimDate')
-  @pref.prefs.clearUserPref('confirmCacheResetSize')
-
 Zotero.BetterBibTeX.init = ->
   return if @initialized
   @initialized = true
@@ -633,8 +608,6 @@ Zotero.BetterBibTeX.init = ->
   @threadManager = Components.classes['@mozilla.org/thread-manager;1'].getService()
   @windowMediator = Components.classes['@mozilla.org/appshell/window-mediator;1'].getService(Components.interfaces.nsIWindowMediator)
 
-  @migrateData() if Zotero.BetterBibTeX.DB.upgradeNeeded
-
   if @pref.get('scanCitekeys') || Zotero.BetterBibTeX.DB.upgradeNeeded
     reason = if @pref.get('scanCitekeys') then 'requested by user' else 'after upgrade'
     @flash("Citation key rescan #{reason}", "Scanning 'extra' fields for fixed keys\nFor a large library, this might take a while")
@@ -644,6 +617,7 @@ Zotero.BetterBibTeX.init = ->
     @DB.purge()
     setTimeout((-> Zotero.BetterBibTeX.auto.markIDs(changed, 'scanCiteKeys')), 5000) if changed.length != 0
     @flash("Citation key rescan finished")
+    @pref.set('scanCitekeys', false)
 
   Zotero.Translate.Export::Sandbox.BetterBibTeX = {
     journalAbbrev:  (sandbox, params...) => @JournalAbbrev.get.apply(@JournalAbbrev, params)
@@ -789,6 +763,7 @@ Zotero.BetterBibTeX.init = ->
         when column.id == 'zotero-items-column-extra' && Zotero.BetterBibTeX.pref.get('showCitekeys')
           type = 'citekey'
       item = @._getItemAtRow(row) if type
+      console.log("Zotero.ItemTreeView::getCellText: #{type} for #{column.id}")
 
       return original.apply(@, arguments) unless item
       return '' if !item.ref || item.ref.isAttachment() || item.ref.isNote()
@@ -934,7 +909,7 @@ Zotero.BetterBibTeX.init = ->
   Zotero.addShutdownListener(->
     Zotero.BetterBibTeX.log('shutting down')
     Zotero.BetterBibTeX.DB.save('force')
-    Zotero.BetterBibTeX.debugMode()
+    Zotero.BetterBibTeX.debugMode(true)
     return
   )
   Zotero.getActiveZoteroPane().addBeforeReloadListener((mode) =>

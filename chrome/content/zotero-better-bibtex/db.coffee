@@ -1,67 +1,91 @@
 Components.utils.import('resource://gre/modules/Services.jsm')
+Components.utils.import('resource://gre/modules/FileUtils.jsm')
 
-if Zotero.BetterBibTeX.Async
-  Zotero.BetterBibTeX.debug('DBStore: Async')
-  Zotero.BetterBibTeX.DBStore = new class
-    constructor: ->
-      @store = new Zotero.DBConnection('betterbibtex-lokijs')
-      Zotero.BetterBibTeX.debug('DBStore: Async.init')
-      #@store = new Zotero.BetterBibTeX.SQLite('betterbibtex-lokijs')
-      #@store.query('CREATE TABLE IF NOT EXISTS lokijs (name PRIMARY KEY, data)')
+Zotero.BetterBibTeX.DBStore = new class
+  backups: 4
 
-    saveDatabase: (name, serialized, callback) ->
-      if !Zotero.initialized || Zotero.isConnector
-        Zotero.BetterBibTeX.flash('Zotero is in connector mode -- not saving database!')
+  constructor: ->
+    # this will go away in 5.0
+    dbName = 'betterbibtex-lokijs'
+    file = Zotero.getZoteroDatabase(dbName)
+    Zotero.BetterBibTeX.debug('DBStore: looking for', file.path)
+    if file.exists()
+      if Zotero.BetterBibTeX.Five
+        Zotero.BetterBibTeX.flash('Better BibTeX 4.X.Y database found', 'Please install Better BibTeX 4.X.Y and run at least once to prepare for upgrade')
         return
 
-      Zotero.BetterBibTeX.debug('DBStore: Async.save')
+      Zotero.BetterBibTeX.debug('DBStore: migrating', dbName)
+      store = new Zotero.DBConnection(dbName)
+      for row in store.query("SELECT name, data FROM lokijs WHERE name IN ('cache.json', 'db.json')")
+        Zotero.BetterBibTeX.debug('DBStore: migrating', row, row.name)
+        @saveDatabase(row.name, row.data, ->)
+      store.closeDatabase(true)
+      file.remove(null)
 
-      Zotero.Promise.coroutine(->
-        try
-          yield store.queryAsync('CREATE TABLE IF NOT EXISTS lokijs (name PRIMARY KEY, data)')
-          yield store.queryAsync('INSERT OR REPLACE INTO lokijs (name, data) VALUES (?, ?)', [name, serialized])
-          callback()
-        catch err
-          callback(err)
-      )()
+  versioned: (name, id) ->
+    return name unless id
+    return "#{name}.#{id}"
 
-    loadDatabase: (name, callback) ->
-      Zotero.BetterBibTeX.debug('DBStore: Async.load')
-      Zotero.Promise.coroutine(=>
-        try
-          yield @store.queryAsync('CREATE TABLE IF NOT EXISTS lokijs (name PRIMARY KEY, data)')
-          data = yield @store.valueQueryAsync('SELECT data FROM lokijs WHERE name=?', [name])
-          callback(data || null)
-        catch err
-          callback(err)
-      )()
-
-else
-  Zotero.BetterBibTeX.debug('DBStore: Sync')
-  Zotero.BetterBibTeX.DBStore = new class
-    constructor: ->
-      @store = new Zotero.DBConnection('betterbibtex-lokijs')
-      @store.query('CREATE TABLE IF NOT EXISTS lokijs (name PRIMARY KEY, data)')
-
-    saveDatabase: (name, serialized, callback) ->
-      if !Zotero.initialized || Zotero.isConnector
-        Zotero.BetterBibTeX.flash('Zotero is in connector mode -- not saving database!')
-      else
-        Zotero.BetterBibTeX.debug("Saving database #{name}")
-        @store.query("INSERT OR REPLACE INTO lokijs (name, data) VALUES (?, ?)", [name, serialized])
+  saveDatabase: (name, serialized, callback) ->
+    if Zotero.isConnector
+      Zotero.BetterBibTeX.flash('Zotero is in connector mode -- not saving database!')
       callback()
       return
 
-    loadDatabase: (name, callback) ->
-      file = Zotero.BetterBibTeX.createFile(name)
-      if file.exists()
-        Zotero.BetterBibTeX.debug('DB.loadDatabase:', {name, file: file.path})
-        callback(Zotero.File.getContents(file))
-        file.remove(null) if file.exists()
-        return
+    try
+      for id in [@backups..0]
+        db = Zotero.BetterBibTeX.createFile(@versioned(name, id))
+        continue unless db.exists()
+        Zotero.BetterBibTeX.debug("DBStore: backing up #{db.path}")
+        db.moveTo(null, name + ".#{id + 1}")
+    catch err
+      Zotero.BetterBibTeX.debug('DBStore: backup failed', err)
 
-      callback(@store.valueQuery("SELECT data FROM lokijs WHERE name=?", [name]) || null)
-      return
+    Zotero.BetterBibTeX.debug("DBStore: Saving database #{name}")
+    db = Zotero.BetterBibTeX.createFile(name)
+    fos = FileUtils.openSafeFileOutputStream(db)
+    fos.write(serialized, serialized.length)
+    FileUtils.closeSafeFileOutputStream(fos)
+    callback()
+    return
+
+  tryDatabase: (name) ->
+    Zotero.BetterBibTeX.debug("DBStore.load: trying #{name}")
+    file = Zotero.BetterBibTeX.createFile(name)
+    return null unless file.exists()
+
+    #data = ''
+    #fstream = Components.classes['@mozilla.org/network/file-input-stream;1'].createInstance(Ci.nsIFileInputStream)
+    #sstream = Components.classes['@mozilla.org/scriptableinputstream;1'].createInstance(Ci.nsIScriptableInputStream)
+    #fstream.init(file, -1, 0, 0)
+    #sstream.init(fstream)
+    #str = sstream.read(4096)
+    #while str.length > 0
+    #  data += str
+    #  str = sstream.read(4096)
+    #sstream.close()
+    #fstream.close()
+
+    data = Zotero.File.getContents(file)
+
+    # will throw an error if not valid JSON -- too bad we're doing this twice, but better safe than sorry, and only
+    # happens at startup
+    JSON.parse(data)
+
+    return data
+
+  loadDatabase: (name, callback) ->
+    data = null
+    for id in [0..@backups]
+      try
+        data = @tryDatabase(@versioned(name, id))
+        break if data
+      catch err
+        data = null
+        Zotero.BetterBibTeX.flash("DBStore: failed to load #{@versioned(name, id)}", err)
+
+    callback(data)
+    return
 
 Zotero.BetterBibTeX.DB = new class
   cacheExpiry: Date.now() - (1000 * 60 * 60 * 24 * 30)
@@ -116,10 +140,6 @@ Zotero.BetterBibTeX.DB = new class
       @db.metadata.update(@metadata)
     Zotero.BetterBibTeX.debug('db: loaded, metadata:', @metadata)
 
-    ### this ensures that if the volatile DB hasn't been saved in the previous session, it is destroyed and will be rebuilt. ###
-    volatile = Zotero.BetterBibTeX.createFile(@db.volatile.filename)
-    volatile.moveTo(null, @db.volatile.filename + '.bak') if volatile.exists()
-
     @cache = @db.volatile.getCollection('cache')
     @cache ||= @db.volatile.addCollection('cache', { indices: ['itemID'] })
     delete @cache.binaryIndices.getCollections
@@ -152,7 +172,7 @@ Zotero.BetterBibTeX.DB = new class
 
     @upgradeNeeded = {}
     freshInstall = true
-    for k, v of { Zotero: Zotero.BetterBibTeX.zoteroRelease, BetterBibTeX: Zotero.BetterBibTeX.release, storage: Zotero.getZoteroDirectory().path }
+    for k, v of { Zotero: Zotero.version, BetterBibTeX: Zotero.BetterBibTeX.release, storage: Zotero.getZoteroDirectory().path }
       freshInstall = false if @metadata[k]
       continue if @metadata[k] == v
       @upgradeNeeded[k] = v
@@ -278,7 +298,7 @@ Zotero.BetterBibTeX.DB = new class
     Zotero.debug('DB.initialize: ready')
 
   purge: ->
-    itemIDs = Zotero.BetterBibTeX.SQLite::columnQuery('select itemID from items except select itemID from deletedItems')
+    itemIDs = Zotero.BetterBibTeX.SQLite.columnQuery('select itemID from items except select itemID from deletedItems')
     itemIDs = (parseInt(id) for id in itemIDs)
     @keys.removeWhere((o) -> o.itemID not in itemIDs)
     @cache.removeWhere((o) -> o.itemID not in itemIDs)

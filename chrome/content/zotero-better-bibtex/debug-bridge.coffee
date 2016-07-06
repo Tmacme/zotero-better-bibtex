@@ -53,7 +53,7 @@ Zotero.BetterBibTeX.DebugBridge.methods.reset = ->
   Zotero.BetterBibTeX.keymanager.reset()
   Zotero.BetterBibTeX.JournalAbbrev.reset()
 
-  return true if Zotero.BetterBibTeX.SQLite::valueQuery('select count(*) as n from items') == 0
+  return true if Zotero.BetterBibTeX.SQLite.valueQuery('select count(*) as n from items') == 0
   err = JSON.stringify((item.toArray() for item in Zotero.BetterBibTeX.safeGetAll()))
   throw "reset failed -- Library not empty -- #{err}"
 
@@ -69,7 +69,7 @@ Zotero.BetterBibTeX.DebugBridge.methods.librarySize = ->
     notes: 0
     attachments: 0
   }
-  for count in Zotero.BetterBibTeX.SQLite::query("
+  for count in Zotero.BetterBibTeX.SQLite.query("
           select count(*) as nr, case itemtypeID when 1 then 'notes' when 14 then 'attachments' else 'references' end as itemType
           from items i
           where not i.itemID in (select d.itemID from deletedItems d)
@@ -153,7 +153,7 @@ Zotero.BetterBibTeX.DebugBridge.methods.find = (attribute, value, select) ->
          join fields f on id.fieldID = f.fieldID
          where f.fieldName = '#{attribute}' and not i.itemID in (select itemID from deletedItems) and idv.value = ?"
 
-  id = Zotero.BetterBibTeX.SQLite::valueQuery(sql, [value])
+  id = Zotero.BetterBibTeX.SQLite.valueQuery(sql, [value])
   throw new Error("No item found with #{attribute} = '#{value}'") unless id
 
   id = parseInt(id)

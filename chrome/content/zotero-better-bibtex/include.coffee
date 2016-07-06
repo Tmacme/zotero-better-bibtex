@@ -22,11 +22,19 @@ if not Zotero.BetterBibTeX
                   autoexport
                   serialized
                   ".trim().split(/\s+/)
-    Zotero.debug('BBT: ' + script)
-    loader.loadSubScript("chrome://zotero-better-bibtex/content/#{script}.js")
+    try
+      Zotero.debug("BBT: loading #{script}")
+      loader.loadSubScript("chrome://zotero-better-bibtex/content/#{script}.js")
+    catch err
+      Zotero.debug("BBT: failed to load #{script}; #{err}")
+      Zotero.BetterBibTeX = null
+      break
 
   window.addEventListener('load', (load = (event) ->
     window.removeEventListener('load', load, false) #remove listener, no longer needed
-    Zotero.BetterBibTeX.init()
+    try
+      Zotero.BetterBibTeX.init()
+    catch err
+      Zotero.debug("BBT: failed to init; #{err}")
     return
   ), false)
