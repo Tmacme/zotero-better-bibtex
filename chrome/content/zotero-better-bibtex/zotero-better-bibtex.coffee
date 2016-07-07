@@ -762,8 +762,13 @@ Zotero.BetterBibTeX.init = ->
           type = 'itemid'
         when column.id == 'zotero-items-column-extra' && Zotero.BetterBibTeX.pref.get('showCitekeys')
           type = 'citekey'
-      item = @._getItemAtRow(row) if type
-      console.log("Zotero.ItemTreeView::getCellText: #{type} for #{column.id}")
+
+      if type
+        if Zotero.BetterBibTeX.Five
+          item = @getRow(row)
+        else
+          item = @._getItemAtRow(row)
+      Zotero.BetterBibTeX.debug("Zotero.ItemTreeView::getCellText: #{type} for #{column.id}")
 
       return original.apply(@, arguments) unless item
       return '' if !item.ref || item.ref.isAttachment() || item.ref.isNote()
@@ -983,6 +988,7 @@ Translator.initialize = (function(original) {
 """
 
 Zotero.BetterBibTeX.loadTranslators = ->
+  @Translators.init()
   for label, translatorID of {
     'LaTeX Citation': 'b4a5ab19-c3a2-42de-9961-07ae484b8cb0',
     'Pandoc Citation': '4c52eb69-e778-4a78-8ca2-4edf024a5074',
@@ -1011,7 +1017,7 @@ Zotero.BetterBibTeX.loadTranslators = ->
         Zotero.Prefs.set('extensions.zotero.export.quickCopy.setting', 'export=9b85ff96-ceb3-4ca2-87a9-154c18ab38b1')
         Zotero.BetterBibTeX.pref.set('quickCopyMode', 'pandoc')
 
-  for translator in @Translators
+  for translator in @Translators.headers
     @load(translator)
 
   ### clean up junk ###
@@ -1020,13 +1026,14 @@ Zotero.BetterBibTeX.loadTranslators = ->
   try
     @removeTranslator({label: 'Zotero TestCase', translatorID: '82512813-9edb-471c-aebc-eeaaf40c6cf9'})
 
-  Zotero.Translators.init()
+  @Translators.init()
 
 Zotero.BetterBibTeX.removeTranslators = ->
-  for translator in @Translators
+  @Translators.init()
+  for translator in @Translators.headers
     @removeTranslator(translator)
   @translators = {}
-  Zotero.Translators.init()
+  @Translators.init()
 
 Zotero.BetterBibTeX.removeTranslator = (header) ->
   try

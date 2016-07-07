@@ -3,8 +3,8 @@ if not Zotero.BetterBibTeX
 
   for script in " lokijs
                   zotero-better-bibtex
-                  async
                   translators
+                  async
                   db
                   csl-localedata
                   fold-to-ascii
