@@ -11,16 +11,21 @@ Zotero.BetterBibTeX.DBStore = new class
     Zotero.BetterBibTeX.debug('DBStore: looking for', file.path)
     if file.exists()
       if Zotero.BetterBibTeX.Five
-        Zotero.BetterBibTeX.flash('Better BibTeX 4.X.Y database found', 'Please install Better BibTeX 4.X.Y and run at least once to prepare for upgrade')
+        Zotero.BetterBibTeX.flash('Better BibTeX 1.6.67 database found', 'Please install Better BibTeX 1.6.68 and run at least once to prepare for upgrade')
         return
 
-      Zotero.BetterBibTeX.debug('DBStore: migrating', dbName)
-      store = new Zotero.DBConnection(dbName)
-      for row in store.query("SELECT name, data FROM lokijs WHERE name IN ('cache.json', 'db.json')")
-        Zotero.BetterBibTeX.debug('DBStore: migrating', row, row.name)
-        @saveDatabase(row.name, row.data, ->)
-      store.closeDatabase(true)
-      file.remove(null)
+      try
+        Zotero.BetterBibTeX.debug('DBStore: migrating', dbName)
+        store = new Zotero.DBConnection(dbName)
+        for row in store.query("SELECT name, data FROM lokijs WHERE name IN ('cache.json', 'db.json')")
+          Zotero.BetterBibTeX.debug('DBStore: migrating', row, row.name)
+          @saveDatabase(row.name, row.data, ->)
+        store.closeDatabase(true)
+        file.remove(null)
+      catch err
+        Zotero.BetterBibTeX.flash("Failed to migrate #{file.path}; the database has been backup up, please file an error report")
+        Zotero.BetterBibTeX.debug('DBStore: migration failed:', err)
+        file.moveTo(null, file.leafName + '.failedmigration')
 
   versioned: (name, id) ->
     return name unless id
