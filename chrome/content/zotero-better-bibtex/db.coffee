@@ -5,6 +5,14 @@ Zotero.BetterBibTeX.DBStore = new class
   backups: 4
 
   constructor: ->
+    try
+      for db in ['db.json', 'cache.json']
+        data = @tryDatabase(db)
+        data.filename.length && data.collections.length
+      return
+    catch err
+      Zotero.debug('better-bibtex: No .68 database: ' + err)
+
     # this will go away in 5.0
     dbName = 'betterbibtex-lokijs'
     file = Zotero.getZoteroDatabase(dbName)
