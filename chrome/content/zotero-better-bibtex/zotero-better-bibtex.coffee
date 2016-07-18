@@ -1026,14 +1026,14 @@ Zotero.BetterBibTeX.loadTranslators = ->
   try
     @removeTranslator({label: 'Zotero TestCase', translatorID: '82512813-9edb-471c-aebc-eeaaf40c6cf9'})
 
-  @Translators.init()
+  @Translators.reinit()
 
 Zotero.BetterBibTeX.removeTranslators = ->
   @Translators.init()
   for translator in @Translators.headers
     @removeTranslator(translator)
   @translators = {}
-  @Translators.init()
+  @Translators.reinit()
 
 Zotero.BetterBibTeX.removeTranslator = (header) ->
   try

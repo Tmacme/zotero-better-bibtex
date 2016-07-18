@@ -30,11 +30,21 @@ if not Zotero.BetterBibTeX
       Zotero.BetterBibTeX = null
       break
 
-  window.addEventListener('load', (load = (event) ->
-    window.removeEventListener('load', load, false) #remove listener, no longer needed
+  loader = ->
     try
       Zotero.BetterBibTeX.init()
     catch err
       Zotero.debug("BBT: failed to init; #{err}")
     return
-  ), false)
+
+  if Zotero.BetterBibTeX.Five
+    Zotero.Promise.coroutine(->
+      yield Zotero.Schema.schemaUpdatePromise
+      loader()
+    )()
+  else
+    window.addEventListener('load', (load = (event) ->
+      window.removeEventListener('load', load, false) #remove listener, no longer needed
+      loader()
+      return
+    ), false)

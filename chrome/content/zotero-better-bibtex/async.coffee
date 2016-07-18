@@ -34,6 +34,9 @@ Zotero.BetterBibTeX.SQLite =
 Zotero.BetterBibTeX.Translators ?= {}
 
 Zotero.BetterBibTeX.Translators.init = ->
-  return Zotero.Translators.init() unless Zotero.BetterBibTeX.Five
-
+  return unless Zotero.BetterBibTeX.Five
   return Zotero.BetterBibTeX.deasync(Zotero.Translators, 'init')
+
+Zotero.BetterBibTeX.Translators.reinit = ->
+  return Zotero.Translators.init() unless Zotero.BetterBibTeX.Five
+  return Zotero.BetterBibTeX.deasync(Zotero.Translators, 'reinit')
