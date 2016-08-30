@@ -6,14 +6,11 @@
     "preferences": {
       "asciiBibLaTeX": false,
       "asciiBibTeX": false,
-      "attachmentRelativePath": false,
       "attachmentsNoMetadata": false,
       "autoAbbrevStyle": "http://www.zotero.org/styles/elsevier-harvard",
       "autoAbbrev": true,
       "citekeyFormat": "[auth:nopunct][year][Title:skipwords:nopunct:select,1,2:capitalize:fold:alphanum]",
       "DOIandURL": "both",
-      "fancyURLs": false,
-      "titleCase": false,
       "skipFields": "abstract,note,file"
     },
     "options": {
@@ -28,7 +25,8 @@
       "itemType": "thesis",
       "thesisType": "mastersthesis",
       "date": "2011",
-      "title": "CTR Det multiple arkæologiske objekt. Et studie af materialitet og arkæologiske tekstiler",
+      "language": "norsk",
+      "title": "Det multiple arkæologiske objekt. Et studie af materialitet og arkæologiske tekstiler",
       "creators": [
         {
           "creatorType": "author",
@@ -63,6 +61,7 @@
       "itemType": "thesis",
       "thesisType": "phdthesis",
       "date": "2011",
+      "language": "norsk",
       "title": "CTR Det multiple arkæologiske objekt. Et studie af materialitet og arkæologiske tekstiler",
       "creators": [
         {

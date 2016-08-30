@@ -4,13 +4,8 @@
     "label": "BetterBibTeX JSON",
     "release": "0.7.1",
     "preferences": {
-      "fancyURLs": false,
-      "attachmentRelativePath": false,
       "citekeyFormat": "[auth][year]",
-      "skipfields": "Accessed",
-      "usePrefix": false,
       "autoAbbrev": true,
-      "titleCase": true,
       "autoAbbrevStyle": "http://www.zotero.org/styles/american-medical-association"
     },
     "options": {

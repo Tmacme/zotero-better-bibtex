@@ -21,7 +21,7 @@ Zotero.BetterBibTeX.DBStore = new class
           Zotero.BetterBibTeX.debug('DBStore: migrating', row, row.name)
           @saveDatabase(row.name, row.data, ->)
         store.closeDatabase(true)
-        file.remove(null)
+        file.moveTo(null, file.leafName + '.migrated')
       catch err
         Zotero.BetterBibTeX.flash("Failed to migrate #{file.path}; the database has been backup up, please file an error report")
         Zotero.BetterBibTeX.debug('DBStore: migration failed:', err)
@@ -38,19 +38,20 @@ Zotero.BetterBibTeX.DBStore = new class
       return
 
     try
-      for id in [@backups..0]
-        db = Zotero.BetterBibTeX.createFile(@versioned(name, id))
-        continue unless db.exists()
-        Zotero.BetterBibTeX.debug("DBStore: backing up #{db.path}")
-        db.moveTo(null, name + ".#{id + 1}")
+      db = Zotero.BetterBibTeX.createFile(name)
+      if db.exists()
+        for id in [@backups..0]
+          db = Zotero.BetterBibTeX.createFile(@versioned(name, id))
+          continue unless db.exists()
+          Zotero.BetterBibTeX.debug("DBStore: backing up #{db.path}")
+          db.moveTo(null, name + ".#{id + 1}")
     catch err
       Zotero.BetterBibTeX.debug('DBStore: backup failed', err)
 
-    Zotero.BetterBibTeX.debug("DBStore: Saving database #{name}")
-    db = Zotero.BetterBibTeX.createFile(name)
-    fos = FileUtils.openSafeFileOutputStream(db)
-    fos.write(serialized, serialized.length)
-    FileUtils.closeSafeFileOutputStream(fos)
+    db = Zotero.BetterBibTeX.createFile(name + '.saving')
+    Zotero.File.putContents(db, serialized)
+    db.moveTo(null, name)
+
     callback()
     return
 
@@ -58,18 +59,6 @@ Zotero.BetterBibTeX.DBStore = new class
     Zotero.BetterBibTeX.debug("DBStore.load: trying #{name}")
     file = Zotero.BetterBibTeX.createFile(name)
     return null unless file.exists()
-
-    #data = ''
-    #fstream = Components.classes['@mozilla.org/network/file-input-stream;1'].createInstance(Ci.nsIFileInputStream)
-    #sstream = Components.classes['@mozilla.org/scriptableinputstream;1'].createInstance(Ci.nsIScriptableInputStream)
-    #fstream.init(file, -1, 0, 0)
-    #sstream.init(fstream)
-    #str = sstream.read(4096)
-    #while str.length > 0
-    #  data += str
-    #  str = sstream.read(4096)
-    #sstream.close()
-    #fstream.close()
 
     data = Zotero.File.getContents(file)
 
@@ -86,8 +75,10 @@ Zotero.BetterBibTeX.DBStore = new class
         data = @tryDatabase(@versioned(name, id))
         break if data
       catch err
+        Zotero.BetterBibTeX.debug("DBStore: failed to load #{@versioned(name, id)}", err)
         data = null
-        Zotero.BetterBibTeX.flash("DBStore: failed to load #{@versioned(name, id)}", err)
+
+    Zotero.BetterBibTeX.flash("failed to load #{name}") unless data
 
     callback(data)
     return
@@ -186,27 +177,28 @@ Zotero.BetterBibTeX.DB = new class
 
     switch
       # force cache reset by user request, or fresh install
-      when Zotero.BetterBibTeX.pref.get('cacheReset')
+      when Zotero.BetterBibTeX.Pref.get('cacheReset')
         Zotero.BetterBibTeX.debug('reset cache: user request')
-        cacheReset = true
+        @cacheReset = true
 
       when @upgradeNeeded && freshInstall
         Zotero.BetterBibTeX.debug('reset cache: new installation')
-        cacheReset = true
+        @cacheReset = true
 
       # nothing changed, don't touch the cache
       when !@upgradeNeeded
         Zotero.BetterBibTeX.debug('reset cache: no')
-        cacheReset = false
+        @cacheReset = false
 
       # something has changed, really *should* drop the cache, but let's ask the user
       else
+        @cacheReset = true
         Zotero.BetterBibTeX.debug('reset cache: conditional')
         ###
         # The default is arbitrarily set at 1000. I just assume if you have less than that actually cached, you will be more annoyed by being
         # asked about the cache than about it being regenerated.
         ###
-        confirmCacheResetSize = Zotero.BetterBibTeX.pref.get('confirmCacheResetSize')
+        confirmCacheResetSize = Zotero.BetterBibTeX.Pref.get('confirmCacheResetSize')
 
         if confirmCacheResetSize && Math.max(@cache.data.length, @serialized.data.length) > confirmCacheResetSize
           prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService)
@@ -241,7 +233,7 @@ Zotero.BetterBibTeX.DB = new class
           doneIt = doneIt.join(', ')
           Zotero.BetterBibTeX.debug("reset cache: user has #{doneIt}")
 
-          cacheReset = 1 == prompts.confirmEx(
+          @cacheReset = 1 == prompts.confirmEx(
             null,
             'Clear Better BibTeX cache?',
             """
@@ -263,26 +255,26 @@ Zotero.BetterBibTeX.DB = new class
             {value: false}
           )
 
-    if cacheReset
+    if @cacheReset
       Zotero.BetterBibTeX.debug('reset cache: roger roger')
       @serialized.removeDataOnly()
       @cache.removeDataOnly()
-      if typeof cacheReset == 'number'
-        cacheReset = cacheReset - 1
-        cacheReset = 0 if cacheReset < 0
-        Zotero.BetterBibTeX.pref.set('cacheReset', cacheReset)
-        Zotero.debug('DB.initialize, cache.load forced reset, ' + cacheReset + 'left')
+      if typeof @cacheReset == 'number'
+        @cacheReset = @cacheReset - 1
+        @cacheReset = 0 if @cacheReset < 0
+        Zotero.BetterBibTeX.Pref.set('cacheReset', @cacheReset)
+        Zotero.debug('DB.initialize, cache.load forced reset, ' + @cacheReset + 'left')
       else
         Zotero.debug("DB.initialize, cache.load reset after upgrade from #{@metadata.BetterBibTeX} to #{Zotero.BetterBibTeX.release}")
 
     @keys.on('insert', (key) =>
-      if !key.citekeyFormat && Zotero.BetterBibTeX.pref.get('keyConflictPolicy') == 'change'
+      if !key.citekeyFormat && Zotero.BetterBibTeX.Pref.get('keyConflictPolicy') == 'change'
         ### removewhere will trigger 'delete' for the conflicts, which will take care of their cache dependents ###
         @keys.removeWhere((o) -> o.citekey == key.citekey && o.libraryID == key.libraryID && o.itemID != key.itemID && o.citekeyFormat)
       @cache.removeWhere({itemID: key.itemID})
     )
     @keys.on('update', (key) =>
-      if !key.citekeyFormat && Zotero.BetterBibTeX.pref.get('keyConflictPolicy') == 'change'
+      if !key.citekeyFormat && Zotero.BetterBibTeX.Pref.get('keyConflictPolicy') == 'change'
         @keys.removeWhere((o) -> o.citekey == key.citekey && o.libraryID == key.libraryID && o.itemID != key.itemID && o.citekeyFormat)
 
       @cache.removeWhere({itemID: key.itemID})
@@ -293,6 +285,12 @@ Zotero.BetterBibTeX.DB = new class
     )
     @autoexport.on('delete', (key) ->
       Zotero.BetterBibTeX.debug('@autoexport.on(delete)', key)
+    )
+    @autoexport.on('insert', (key) ->
+      Zotero.BetterBibTeX.debug('@autoexport.on(insert)', key)
+    )
+    @autoexport.on('update', (key) ->
+      Zotero.BetterBibTeX.debug('@autoexport.on(update)', key)
     )
 
     if @upgradeNeeded

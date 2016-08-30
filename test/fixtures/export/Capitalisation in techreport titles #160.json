@@ -4,15 +4,12 @@
     "label": "BetterBibTeX JSON",
     "release": "0.7.32",
     "preferences": {
-      "attachmentRelativePath": false,
       "attachmentsNoMetadata": false,
       "autoAbbrevStyle": "http://www.zotero.org/styles/cell",
       "autoAbbrev": true,
       "citekeyFormat": "[auth]_[year]",
       "DOIandURL": "doi",
-      "preserveCaps": "all",
-      "rawImports": false,
-      "usePrefix": false
+      "rawImports": false
     },
     "options": {
       "exportFileData": false,

@@ -6,11 +6,7 @@
     "preferences": {
       "citekeyFormat": "[auth][year]",
       "skipFields": "",
-      "usePrefix": false,
-      "preserveCaps": "inner",
-      "fancyURLs": false,
       "langID": "babel",
-      "attachmentRelativePath": true,
       "autoAbbrev": true,
       "autoAbbrevStyle": "http://www.zotero.org/styles/cell",
       "pinCitekeys": "manual",

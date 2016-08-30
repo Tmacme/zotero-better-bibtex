@@ -4,9 +4,6 @@
     "label": "BetterBibTeX JSON",
     "release": "0.6.48",
     "preferences": {
-      "brace-all": false,
-      "fancyURLs": false,
-      "attachmentRelativePath": false
     },
     "options": {
       "exportFileData": false,

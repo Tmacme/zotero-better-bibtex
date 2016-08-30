@@ -9,8 +9,6 @@
       "jabrefGroups": false,
       "postscript": "",
       "csquotes": "",
-      "titleCase": true,
-      "fancyURLs": false,
       "langID": "babel",
       "rawImports": false,
       "DOIandURL": "both",
@@ -157,7 +155,7 @@
       "relations": {
       },
       "language": "en-US",
-      "title": "High-speed Digital-to-RF converter",
+      "title": "High-speed digital-to-RF converter",
       "creators": [
 
       ],

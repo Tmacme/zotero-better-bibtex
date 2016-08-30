@@ -37,9 +37,7 @@
       "jabrefGroups": false,
       "defaultDateParserLocale": "",
       "parseParticles": true,
-      "titleCase": false,
       "titleCaseLowerCase": "about above across afore after against along alongside amid amidst among amongst anenst apropos apud around as aside astride at athwart atop barring before behind below beneath beside besides between beyond but by circa despite down during except for forenenst from given in inside into lest like modulo near next notwithstanding of off on onto out over per plus pro qua sans since than through thru throughout thruout till to toward towards under underneath until unto up upon versus vs. v. vs v via vis-à-vis with within without according to ahead of apart from as for as of as per as regards aside from back to because of close to due to except for far from inside of instead of near to next to on to out from out of outside of prior to pursuant to rather than regardless of such as _that_ their of up to where as or yet so for and nor a an the de d' von van c et ca",
-      "titleCaseUpperCase": "ID TV",
       "quickCopyMode": "orgmode"
     },
     "options": {
@@ -49,12 +47,17 @@
       "exportNotes": true
     }
   },
-  "collections": [],
+  "collections": [
+
+  ],
   "items": [
     {
       "itemType": "journalArticle",
-      "tags": [],
-      "relations": {},
+      "tags": [
+
+      ],
+      "relations": {
+      },
       "url": "https://twitter.com/SenSanders/status/717771426284060673",
       "date": "2016-04-06",
       "extra": "bibtex: sanders_largest_2016 \nbibtex[titleaddon=SenSanders]",
@@ -66,45 +69,17 @@
           "firstName": "Bernie"
         }
       ],
-      "attachments": [],
-      "notes": [],
+      "attachments": [
+
+      ],
+      "notes": [
+
+      ],
       "itemID": 100,
-      "seeAlso": [],
+      "seeAlso": [
+
+      ],
       "__citekey__": "sanders_largest_2016Sanders"
-    }
-  ],
-  "cache": {
-    "items": [
-      {
-        "itemID": 100,
-        "exportCharset": "UTF-8",
-        "exportNotes": false,
-        "translatorID": "f895aa0d-f28e-47fe-b247-2ea77c6ed583",
-        "useJournalAbbreviation": false,
-        "citekey": "sanders_largest_2016",
-        "bibtex": "@article{sanders_largest_2016,\n  title = {The largest {{U}}.{{S}}. companies would owe \\textdollar{}620 billion in {{U}}.{{S}}. taxes on the cash they store in tax havens, the equivalent of our defense budget. [{{Tweet}}]},\n  url = {https://twitter.com/SenSanders/status/717771426284060673},\n  timestamp = {2016-04-29T10:42:03Z},\n  author = {Sanders, Bernie},\n  date = {2016-04-06},\n  titleaddon = {SenSanders},\n  x-audience = {international},\n  x-popularlevel = {no},\n  x-peereviewing = {yes},\n  x-proceedings = {yes},\n  x-invitedcommunication = {yes}\n}\n\n",
-        "accessed": 1461926659378
-      }
-    ]
-  },
-  "keymanager": [
-    {
-      "itemID": 93,
-      "libraryID": null,
-      "citekey": "smolin_classical_2013SmolinSmith",
-      "citekeyFormat": "[zotero][authors]"
-    },
-    {
-      "itemID": 97,
-      "libraryID": null,
-      "citekey": "ronnow_defining_2014RonnowWangJobBoixoIsakovWeckerMartinisLidarTroyer",
-      "citekeyFormat": "[zotero][authors]"
-    },
-    {
-      "itemID": 100,
-      "libraryID": null,
-      "citekey": "sanders_largest_2016",
-      "citekeyFormat": null
     }
   ]
 }

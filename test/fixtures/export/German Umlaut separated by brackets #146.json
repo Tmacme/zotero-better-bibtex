@@ -4,10 +4,8 @@
     "label": "BetterBibTeX JSON",
     "release": "0.7.11",
     "preferences": {
-      "attachmentRelativePath": false,
       "citekeyFormat": "[auth][year]",
       "skipFields": "keywords,abstract,file",
-      "usePrefix": false,
       "autoAbbrev": true,
       "autoAbbrevStyle": "http://www.zotero.org/styles/ieee"
     },
