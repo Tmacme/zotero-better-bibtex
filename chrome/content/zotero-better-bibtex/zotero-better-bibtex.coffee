@@ -556,7 +556,7 @@ Zotero.BetterBibTeX.init = ->
     return (data) ->
       r = original.apply(@, arguments)
       try
-        setTimeout((-> Zotero.BetterBibTeX.itemChanged.notify('modify', 'item', [data.item.id], [])), 1000)
+        setTimeout((-> Zotero.BetterBibTeX.itemNotification.notify('modify', 'item', [data.item.id], [])), 1000)
       catch e
         Zotero.BetterBibTeX.debug('Zotero.Sync.Storage.processDownload:', e)
       return r
@@ -795,9 +795,9 @@ Zotero.BetterBibTeX.init = ->
   )
 
   nids = []
-  nids.push(Zotero.Notifier.registerObserver(@itemChanged, ['item']))
-  nids.push(Zotero.Notifier.registerObserver(@collectionChanged, ['collection']))
-  nids.push(Zotero.Notifier.registerObserver(@itemAdded, ['collection-item']))
+  nids.push(Zotero.Notifier.registerObserver(@itemNotification, ['item']))
+  nids.push(Zotero.Notifier.registerObserver(@collectionNotification, ['collection']))
+  nids.push(Zotero.Notifier.registerObserver(@collectionItemNotification, ['collection-item']))
   window.addEventListener('unload', ((e) -> Zotero.Notifier.unregisterObserver(id) for id in nids), false)
 
   zoteroPane = Zotero.getActiveZoteroPane()
@@ -918,66 +918,41 @@ Zotero.BetterBibTeX.removeTranslator = (header) ->
   catch err
     @debug("failed to remove #{header.label}:", err)
 
-Zotero.BetterBibTeX.itemAdded = notify: ((event, type, collection_items) ->
-  Zotero.BetterBibTeX.debug('itemAdded:', {event, type, collection_items})
-  collections = []
-  items = []
-
-  ###
-    monitor items added to collection to find BibTeX import errors. The scanner adds a dummy item whose 'extra'
-    field has instructions on what to do after import
-  ###
+Zotero.BetterBibTeX.collectionItemNotification = notify: (event, type, collection_items) ->
+  Zotero.BetterBibTeX.debug('collectionItemNotification:', {event, type, collection_items})
 
   return if collection_items.length == 0
 
+  itemIDs = []
+  collectionIDs = []
   for collection_item in collection_items
-    [collectionID, itemID] = collection_item.split('-')
-    collections.push(collectionID)
-    items.push(itemID)
+    collection_item = collection_item.split('-')
+    collectionID = parseInt(collection_item[0])
+    itemID = parseInt(collection_item[1])
+    collectionIDs.push(collectionID)
+    itemIDs.push(itemID)
 
-    continue unless event == 'add'
-    collection = Zotero.Collections.get(collectionID)
-    continue unless collection
+    switch event
+      when 'remove'
+        if Zotero.BetterBibTeX.Collections.items[itemID]
+          delete Zotero.BetterBibTeX.Collections.items[itemID][collectionID]
 
-    try
-      extra = JSON.parse(Zotero.Items.get(itemID).getField('extra').trim())
-      @debug('import error info found on collection add')
-    catch error
-      continue
+      when 'add'
+        Zotero.BetterBibTeX.Collections.items[itemID] ||= {}
+        Zotero.BetterBibTeX.Collections.items[itemID][collectionID] = collectionID
 
-    switch extra.translator
-      when 'ca65189f-8815-4afe-8c8b-8c7c15f0edca'
-        ### Better BibTeX ###
-        if extra.notimported && extra.notimported.length > 0
-          report = new @HTMLNode('http://www.w3.org/1999/xhtml', 'html')
-          report.div(->
-            @p(-> @b('Better BibTeX could not import'))
-            @add(' ')
-            @pre(extra.notimported)
-          )
+  collectionIDs = collectionIDs.concat(Zotero.BetterBibTeX.Collections.affectedBy(itemIDs))
+  Zotero.BetterBibTeX.auto.markCollections(collectionIDs)
 
-          Zotero.Items.trash([itemID])
-          item = new Zotero.Item('note')
-          item.libraryID = collection.libraryID
-          item.setNote(report.serialize())
-          item.save()
-          collection.addItem(item.id)
+Zotero.BetterBibTeX.collectionNotification = notify: (event, type, ids, extraData) ->
+  Zotero.BetterBibTeX.debug('collectionNotification:', {event, type, ids, extraData})
+  if event == 'delete'
+    for collectionID in extraData
+      Zotero.BetterBibTeX.DB.autoexport.removeWhere({collection: "collection:#{collectionID}"})
+  Zotero.BetterBibTeX.Collections.reload()
 
-  collections = @auto.withParentCollections(collections) if collections.length != 0
-  collections = ("collection:#{id}" for id in collections)
-  Zotero.BetterBibTeX.debug('marking:', collections, 'from', (o.collection for o in @DB.autoexport.data))
-  if collections.length > 0
-    for ae in @DB.autoexport.where((o) -> o.collection in collections)
-      @auto.mark(ae, 'pending', "itemAdded: #{collections}")
-).bind(Zotero.BetterBibTeX)
-
-Zotero.BetterBibTeX.collectionChanged = notify: (event, type, ids, extraData) ->
-  return unless event == 'delete' && extraData.length > 0
-  extraData = ("collection:#{id}" for id in extraData)
-  @DB.autoexport.removeWhere((o) -> o.collection in extraData)
-
-Zotero.BetterBibTeX.itemChanged = notify: ((event, type, ids, extraData) ->
-  Zotero.BetterBibTeX.debug("itemChanged:", {event, type, ids, extraData})
+Zotero.BetterBibTeX.itemNotification = notify: (event, type, ids, extraData) ->
+  Zotero.BetterBibTeX.debug("itemNotification:", {event, type, ids, extraData})
 
   return unless type == 'item' && event in ['delete', 'trash', 'add', 'modify']
   ids = extraData if event == 'delete'
@@ -995,21 +970,20 @@ Zotero.BetterBibTeX.itemChanged = notify: ((event, type, ids, extraData) ->
       references.push(item)
   ids = (v for k, v of ids)
 
-  pinned = if event in ['add', 'modify'] then @keymanager.scan(references) else []
+  pinned = if event in ['add', 'modify'] then Zotero.BetterBibTeX.keymanager.scan(references) else []
 
-  @DB.keys.removeWhere((k) -> k.itemID in ids && !(k.itemID in pinned))
+  Zotero.BetterBibTeX.DB.keys.removeWhere((k) -> k.itemID in ids && !(k.itemID in pinned))
 
   if event in ['add', 'modify']
     for item in references
       continue if parseInt(item.id) in pinned
-      @keymanager.get(item, 'on-change')
+      Zotero.BetterBibTeX.keymanager.get(item, 'on-change')
 
   for itemID in ids
-    @serialized.remove(itemID)
-    @cache.remove({itemID})
+    Zotero.BetterBibTeX.serialized.remove(itemID)
+    Zotero.BetterBibTeX.cache.remove({itemID})
 
-  @auto.markIDs(ids, 'itemChanged')
-).bind(Zotero.BetterBibTeX)
+  Zotero.BetterBibTeX.auto.markIDs(ids, 'itemNotification')
 
 Zotero.BetterBibTeX.displayOptions = (url) ->
   params = {}

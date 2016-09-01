@@ -17,6 +17,12 @@ Zotero.BetterBibTeX.auto = new class
 
     @schedule(reason || 'no reason provided') if status == 'pending'
 
+  markCollections: (ids) ->
+    return if ids.length == 0
+    collections = ("collection:#{id}" for id in ids)
+    for ae in @db.autoexport.where((o) -> o.collection in collections)
+      @mark(ae, 'pending', "collectionItemNotification: #{collections}")
+
   markSearch: (id, reason) ->
     search = Zotero.Searches.get(id)
     return false unless search
@@ -56,8 +62,7 @@ Zotero.BetterBibTeX.auto = new class
     @db.save('main')
 
   markIDs: (ids, reason) ->
-    collections = Zotero.Collections.getCollectionsContainingItems(ids, true) || []
-    collections = @withParentCollections(collections) unless collections.length == 0
+    collections = Zotero.BetterBibTeX.Collections.affectedBy(ids)
     collections = ("collection:#{id}" for id in collections)
     for libraryID in Zotero.DB.columnQuery("select distinct libraryID from items where itemID in #{@db.SQLite.Set(ids)}")
       if libraryID
@@ -72,22 +77,6 @@ Zotero.BetterBibTeX.auto = new class
       Zotero.BetterBibTeX.debug('marking:', collections, 'from', (o.collection for o in @db.autoexport.data))
       for ae in @db.autoexport.where((o) -> o.collection in collections)
         @mark(ae, 'pending', reason)
-
-  withParentCollections: (collections) ->
-    return collections if collections.length == 0
-
-    return Zotero.DB.columnQuery("
-      with recursive recursivecollections as (
-        select collectionID, parentCollectionID
-        from collections
-        where collectionID in #{Zotero.BetterBibTeX.DB.SQLite.Set(collections)}
-
-        union all
-
-        select p.collectionID, p.parentCollectionID
-        from collections p
-        join recursivecollections as c on c.parentCollectionID = p.collectionID
-      ) select distinct collectionID from recursivecollections")
 
   clear: ->
     @db.autoexport.removeDataOnly()
