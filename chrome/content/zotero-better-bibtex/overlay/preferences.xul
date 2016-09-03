@@ -13,12 +13,6 @@
   xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   xmlns:html="http://www.w3.org/1999/xhtml">
 
-  <!-- Include the main extension logic -->
-  <script src="chrome://zotero/content/include.js"/>
-  <script src="chrome://zotero-better-bibtex/content/include.js"/>
-  <script src="chrome://zotero-better-bibtex/content/BetterBibTeXPatternFormatter.js"/>
-  <script src="chrome://zotero-better-bibtex/content/BetterBibTeXPatternParser.js"/>
-
   <prefwindow id="zotero-prefs">
     <prefpane id="zotero-prefpane-better-bibtex"
             insertafter="zotero-prefpane-advanced"
@@ -275,5 +269,5 @@
     </prefpane>
   </prefwindow>
 
-  <script src="chrome://zotero-better-bibtex/content/preferences/preferences.js"/><!-- needs to be included every time anew to bind windows and document -->
+  <script src="preferences.js"/><!-- needs to be included every time anew to bind windows and document -->
 </overlay>

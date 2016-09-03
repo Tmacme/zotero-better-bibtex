@@ -544,9 +544,14 @@ end
 
 def browserify(code, target)
   puts "\nbrowserify #{target}"
-  prefix, code = code.split("\n", 2)
-  code, prefix = prefix, code unless code
+  prefix, code, postfix = code.split("\n")
+  if !code
+    code = prefix
+    prefix = postfix = nil
+  end
   prefix = prefix ? prefix + "\n" : ''
+  postfix = postfix ? "\n" + postfix + "\n" : ''
+
   Tempfile.create(['browserify', '.js'], File.dirname(target)) do |caller|
     Tempfile.create(['browserify', '.js'], File.dirname(target)) do |output|
       open(caller.path, 'w'){|f| f.puts code }
@@ -554,6 +559,7 @@ def browserify(code, target)
       open(target, 'w') {|f|
         f.write(prefix)
         f.write(open(output.path).read)
+        f.write(postfix)
       }
     end
   end
@@ -627,8 +633,34 @@ file 'resource/translators/acorn.js' => 'Rakefile' do |t|
   browserify("acorn = require('../../node_modules/acorn/dist/acorn_csp');", t.name)
 end
 
+file 'chrome/content/zotero-better-bibtex/include.coffee' => ['Rakefile'] + XPI.files.select{|js| File.extname(js) == '.js' && File.dirname(js) == 'chrome/content/zotero-better-bibtex' && File.basename(js) != 'include.js' } do |t|
+  cleanly(t.name) do
+    open(t.name, 'w'){|f|
+      f.puts("if not Zotero.BetterBibTeX")
+      f.puts("  loader = Components.classes['@mozilla.org/moz/jssubscript-loader;1'].getService(Components.interfaces.mozIJSSubScriptLoader)")
+      scripts = t.sources.select{|js| File.extname(js) == '.js'}
+      width = scripts.collect{|js| js.length}.max + 1
+      scripts.each{|js|
+        f.print("  Zotero.debug('BBT: loading #{File.basename(js, File.extname(js))}');")
+        f.print(' '.rjust(width - js.length, ' '))
+        f.puts("loader.loadSubScript('chrome://zotero-better-bibtex/content/#{File.basename(js)}')")
+      }
+
+      f.puts("  window.addEventListener('load', (load = (event) ->")
+      f.puts("    window.removeEventListener('load', load, false) #remove listener, no longer needed")
+      f.puts("    Zotero.BetterBibTeX.init()")
+      f.puts("    return")
+      f.puts("  ), false)")
+    }
+  end
+end
+
 file 'chrome/content/zotero-better-bibtex/lokijs.js' => 'Rakefile' do |t|
   browserify("Zotero.LokiJS = require('lokijs');", t.name)
+end
+
+file 'chrome/content/zotero-better-bibtex/bluebird.js' => 'Rakefile' do |t|
+  browserify("if (!Zotero.Promise) { \n Zotero.Promise = require('bluebird'); \n}", t.name)
 end
 
 file 'chrome/content/zotero-better-bibtex/vardump.js' => 'Rakefile' do |t|

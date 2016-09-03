@@ -1,31 +1,26 @@
 if not Zotero.BetterBibTeX
   loader = Components.classes['@mozilla.org/moz/jssubscript-loader;1'].getService(Components.interfaces.mozIJSSubScriptLoader)
-
-  for script in " lokijs
-                  zotero-better-bibtex
-                  vardump
-                  preferences
-                  translators
-                  db
-                  csl-localedata
-                  fold-to-ascii
-                  punycode
-                  BetterBibTeXPatternFormatter
-                  BetterBibTeXPatternParser
-                  preferences
-                  keymanager
-                  journalAbbrev
-                  web-endpoints
-                  schomd
-                  cayw
-                  debug-bridge
-                  cache
-                  autoexport
-                  serialized
-                  ".trim().split(/\s+/)
-    Zotero.debug('BBT: ' + script)
-    loader.loadSubScript("chrome://zotero-better-bibtex/content/#{script}.js")
-
+  Zotero.debug('BBT: loading bluebird');                     loader.loadSubScript('chrome://zotero-better-bibtex/content/bluebird.js')
+  Zotero.debug('BBT: loading lokijs');                       loader.loadSubScript('chrome://zotero-better-bibtex/content/lokijs.js')
+  Zotero.debug('BBT: loading zotero-better-bibtex');         loader.loadSubScript('chrome://zotero-better-bibtex/content/zotero-better-bibtex.js')
+  Zotero.debug('BBT: loading vardump');                      loader.loadSubScript('chrome://zotero-better-bibtex/content/vardump.js')
+  Zotero.debug('BBT: loading preferences');                  loader.loadSubScript('chrome://zotero-better-bibtex/content/preferences.js')
+  Zotero.debug('BBT: loading translators');                  loader.loadSubScript('chrome://zotero-better-bibtex/content/translators.js')
+  Zotero.debug('BBT: loading db');                           loader.loadSubScript('chrome://zotero-better-bibtex/content/db.js')
+  Zotero.debug('BBT: loading csl-localedata');               loader.loadSubScript('chrome://zotero-better-bibtex/content/csl-localedata.js')
+  Zotero.debug('BBT: loading fold-to-ascii');                loader.loadSubScript('chrome://zotero-better-bibtex/content/fold-to-ascii.js')
+  Zotero.debug('BBT: loading punycode');                     loader.loadSubScript('chrome://zotero-better-bibtex/content/punycode.js')
+  Zotero.debug('BBT: loading BetterBibTeXPatternFormatter'); loader.loadSubScript('chrome://zotero-better-bibtex/content/BetterBibTeXPatternFormatter.js')
+  Zotero.debug('BBT: loading BetterBibTeXPatternParser');    loader.loadSubScript('chrome://zotero-better-bibtex/content/BetterBibTeXPatternParser.js')
+  Zotero.debug('BBT: loading keymanager');                   loader.loadSubScript('chrome://zotero-better-bibtex/content/keymanager.js')
+  Zotero.debug('BBT: loading journalAbbrev');                loader.loadSubScript('chrome://zotero-better-bibtex/content/journalAbbrev.js')
+  Zotero.debug('BBT: loading web-endpoints');                loader.loadSubScript('chrome://zotero-better-bibtex/content/web-endpoints.js')
+  Zotero.debug('BBT: loading schomd');                       loader.loadSubScript('chrome://zotero-better-bibtex/content/schomd.js')
+  Zotero.debug('BBT: loading cayw');                         loader.loadSubScript('chrome://zotero-better-bibtex/content/cayw.js')
+  Zotero.debug('BBT: loading debug-bridge');                 loader.loadSubScript('chrome://zotero-better-bibtex/content/debug-bridge.js')
+  Zotero.debug('BBT: loading cache');                        loader.loadSubScript('chrome://zotero-better-bibtex/content/cache.js')
+  Zotero.debug('BBT: loading autoexport');                   loader.loadSubScript('chrome://zotero-better-bibtex/content/autoexport.js')
+  Zotero.debug('BBT: loading serialized');                   loader.loadSubScript('chrome://zotero-better-bibtex/content/serialized.js')
   window.addEventListener('load', (load = (event) ->
     window.removeEventListener('load', load, false) #remove listener, no longer needed
     Zotero.BetterBibTeX.init()
