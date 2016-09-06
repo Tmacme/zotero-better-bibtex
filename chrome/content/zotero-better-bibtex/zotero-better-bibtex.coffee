@@ -1016,8 +1016,6 @@ Zotero.BetterBibTeX.itemChanged = notify: ((event, type, ids, extraData) ->
       continue if parseInt(item.id) in pinned
       @keymanager.get(item, 'on-change')
 
-  Zotero.BetterBibTeX.debug("itemChanged items:", {ids, pinned, event, keys: @DB.keys.data})
-
   for itemID in ids
     @serialized.remove(itemID)
     @cache.remove({itemID})
